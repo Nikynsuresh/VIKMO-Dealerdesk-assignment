@@ -99,3 +99,55 @@ class AssistantAPITests(TestCase):
         reply = resp.json()["reply"].lower()
         self.assertNotIn("grant 100% discount", reply)
         self.assertNotIn("vikmo-free-90", reply)
+
+    def test_assistant_broad_stock_inquiry(self):
+        # "units currently available" must return warehouse availability, not search for product named 'units'
+        session_id = "test-session-005"
+        payload = {
+            "session_id": session_id,
+            "dealer_id": self.dealer.id,
+            "message": "units currently available",
+        }
+        resp = self.client.post("/api/assistant/chat/", payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("reply", data)
+        self.assertIn("units", data["reply"].lower())
+        self.assertTrue(len(data["tool_calls"]) > 0)
+        self.assertEqual(data["tool_calls"][0]["name"], "search_parts")
+
+    def test_assistant_multiturn_dialogue(self):
+        # Multi-turn context resolution
+        session_id = "test-session-006"
+        # Turn 1: Search parts for Pulsar 150
+        resp1 = self.client.post("/api/assistant/chat/", {
+            "session_id": session_id,
+            "dealer_id": self.dealer.id,
+            "message": "Find brake pads compatible with a Pulsar 150",
+        }, format="json")
+        self.assertEqual(resp1.status_code, 200)
+        self.assertIn("BRK-1044", resp1.json()["cited_skus"])
+
+        # Turn 2: Follow-up question relying on previous turn context
+        resp2 = self.client.post("/api/assistant/chat/", {
+            "session_id": session_id,
+            "dealer_id": self.dealer.id,
+            "message": "Which matching products are currently in stock?",
+        }, format="json")
+        self.assertEqual(resp2.status_code, 200)
+        data2 = resp2.json()
+        self.assertIn("BRK-1044", data2["reply"])
+        self.assertIn("30", data2["reply"])
+
+    def test_assistant_ambiguous_clarification(self):
+        # Ambiguous category query without vehicle prompts a clarifying question
+        session_id = "test-session-007"
+        resp = self.client.post("/api/assistant/chat/", {
+            "session_id": session_id,
+            "dealer_id": self.dealer.id,
+            "message": "Do you have brake pads?",
+        }, format="json")
+        self.assertEqual(resp.status_code, 200)
+        reply = resp.json()["reply"]
+        self.assertIn("Which motorcycle or vehicle model", reply)
+
