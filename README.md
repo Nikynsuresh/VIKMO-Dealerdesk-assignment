@@ -138,14 +138,19 @@ GROQ_API_KEY=
 
 ## 7. Testing & Verification
 
-### 7.1 Automated Unit & Integration Tests (22 Tests)
+### 7.1 Automated Unit & Integration Tests (25 Tests)
 Run Django's built-in test suite:
 ```bash
 python manage.py test
 ```
-*Executes model constraint checks, API serialization tests, GST rounding checks, idempotency verification, assistant tool execution, and forecasting math.*
+*Executes model constraint checks, API serialization tests, GST rounding checks, idempotency verification, assistant tool execution, multi-turn dialogue, warehouse availability retrieval, and forecasting math.*
 
-### 7.2 Assignment Smoke Test Verification
+### 7.2 Web Dashboard & Operations Interface
+Once the server is running, access the interactive portal in your browser:
+- **Operations Dashboard & AI Assistant:** [http://127.0.0.1:8000/dashboard/](http://127.0.0.1:8000/dashboard/)
+- **Live REST API Endpoints:** [http://127.0.0.1:8000/api/products/](http://127.0.0.1:8000/api/products/)
+
+### 7.3 Assignment Smoke Test Verification
 Ensure the development server is running on port 8000:
 ```bash
 python manage.py runserver 0.0.0.0:8000 --noreload
